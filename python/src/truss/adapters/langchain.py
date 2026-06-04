@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from truss.context.surgeon import SurgeonConfig, compress
+from truss.context.surgeon import CompressionStrategy, SurgeonConfig, compress
 from truss.types import ContextBlock, ContextRole, ContextWeight
 
 
@@ -22,7 +22,11 @@ class TrussMemory:
     ) -> None:
         self.memory_key = memory_key
         self.blocks: list[ContextBlock] = []
-        self._config = SurgeonConfig(target_tokens=target_tokens, preserve_recent=preserve_recent)
+        self._config = SurgeonConfig(
+            target_tokens=target_tokens,
+            preserve_recent=preserve_recent,
+            strategy=CompressionStrategy(strategy),
+        )
 
     def save_context(self, inputs: dict[str, Any], outputs: dict[str, Any]) -> None:
         human = inputs.get("input", "")

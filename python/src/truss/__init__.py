@@ -16,6 +16,7 @@ from truss.fence.memory_fence import FenceStore, InMemoryFence, LockHandle
 from truss.router.router import ModelSpec, RouterConfig, RouterRule, route
 from truss.mcp.interceptor import McpManifest, McpInterceptor, McpCall
 from truss.session import Session, SessionReport
+from truss.adapters.langchain import TrussMemory
 
 __all__ = [
     "TrussError", "BudgetExceeded", "ToolOutOfScope", "CheckpointNotFound", "FenceLockConflict",
@@ -32,4 +33,5 @@ __all__ = [
     "ModelSpec", "RouterConfig", "RouterRule", "route",
     "McpManifest", "McpInterceptor", "McpCall",
     "Session", "SessionReport",
+    "TrussMemory",
 ]
