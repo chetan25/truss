@@ -102,10 +102,13 @@ def score_relevance(block: ContextBlock, task: str) -> float:
 
 
 def detect_contradiction(a: ContextBlock, b: ContextBlock) -> bool:
-    """Heuristic: True if one block asserts X and the other asserts 'not X'."""
+    """Heuristic: True if A asserts X and B asserts 'not X'.
+
+    Single-direction by design: checks words from A against negations in B only.
+    This avoids false positives where A contains incidental negations (e.g. "do not press").
+    """
     a_lower = a.content.lower()
     b_lower = b.content.lower()
-    # Check A asserts X, B asserts "not X"
     for word in a_lower.split():
         if len(word) > 4 and f"not {word}" in b_lower:
             return True
