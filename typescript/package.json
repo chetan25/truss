@@ -20,11 +20,13 @@
   },
   "dependencies": {
     "better-sqlite3": "^9.0.0",
+    "sql.js": "^1.14.1",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^20.0.0",
+    "@types/sql.js": "^1.4.11",
     "@types/uuid": "^9.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
