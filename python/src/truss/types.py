@@ -40,7 +40,7 @@ class ContextBlock(BaseModel):
 
     @model_validator(mode="after")
     def _fill_token_count(self) -> "ContextBlock":
-        if self.token_count == 0 and self.content:
+        if "token_count" not in self.model_fields_set:
             self.token_count = estimate_tokens(self.content)
         return self
 
