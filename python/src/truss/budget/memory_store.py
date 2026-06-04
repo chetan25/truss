@@ -20,8 +20,8 @@ class InMemoryStore:
                 e for e in self._entries
                 if e.session_id == key or e.user_id == key or e.agent_name == key
             ]
-        total_tokens = sum(e.total_tokens for e in matching)
-        total_cost = sum(e.cost_usd for e in matching)
+            total_tokens = sum(e.total_tokens for e in matching)
+            total_cost = sum(e.cost_usd for e in matching)
         return UsageReport(
             key=key,
             total_tokens=total_tokens,
