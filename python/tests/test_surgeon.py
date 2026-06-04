@@ -73,3 +73,11 @@ def test_detect_contradiction_no_false_positive():
     a = make_block(ContextWeight.NORMAL, 10, "the weather is sunny today")
     b = make_block(ContextWeight.NORMAL, 10, "the price is twenty dollars")
     assert detect_contradiction(a, b) is False
+
+
+def test_detect_contradiction_no_false_positive_on_shared_vocab():
+    # A says "do not press the button", B says "press the lever"
+    # Should NOT be a contradiction because A doesn't assert "press is true"
+    a = make_block(ContextWeight.NORMAL, 10, "do not press the button")
+    b = make_block(ContextWeight.NORMAL, 10, "press the lever to open")
+    assert detect_contradiction(a, b) is False

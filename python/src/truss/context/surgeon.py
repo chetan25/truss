@@ -39,7 +39,7 @@ def compress(blocks: list[ContextBlock], config: SurgeonConfig) -> SurgeonResult
     else:  # HYBRID: prune first, then window if still over budget
         after_prune = _weighted_prune(blocks, config.target_tokens, config.preserve_recent)
         if sum(b.token_count for b in after_prune) > config.target_tokens:
-            kept = _sliding_window(after_prune, config.target_tokens, config.preserve_recent)
+            kept = _sliding_window(after_prune, config.keep_recent or config.preserve_recent, config.preserve_recent)
         else:
             kept = after_prune
 
@@ -54,6 +54,8 @@ def compress(blocks: list[ContextBlock], config: SurgeonConfig) -> SurgeonResult
 
 
 def _sliding_window(blocks: list[ContextBlock], keep_recent: int, preserve_recent: int) -> list[ContextBlock]:
+    if keep_recent == 0:
+        return list(blocks)
     always_keep = max(preserve_recent, keep_recent)
     if len(blocks) <= always_keep:
         return list(blocks)
@@ -100,13 +102,11 @@ def score_relevance(block: ContextBlock, task: str) -> float:
 
 
 def detect_contradiction(a: ContextBlock, b: ContextBlock) -> bool:
-    """Heuristic: True if one block says 'X' and the other says 'not X'."""
+    """Heuristic: True if one block asserts X and the other asserts 'not X'."""
     a_lower = a.content.lower()
     b_lower = b.content.lower()
+    # Check A asserts X, B asserts "not X"
     for word in a_lower.split():
-        if len(word) > 4:
-            if f"not {word}" in b_lower:
-                return True
-            if f"not {word}" in a_lower and word in b_lower:
-                return True
+        if len(word) > 4 and f"not {word}" in b_lower:
+            return True
     return False
