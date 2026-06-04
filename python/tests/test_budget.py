@@ -68,3 +68,34 @@ def test_in_memory_store_concurrent_writes():
 def test_ledger_entry_total_tokens():
     entry = LedgerEntry(session_id="s", model="m", input_tokens=100, output_tokens=50, cost_usd=0.01)
     assert entry.total_tokens == 150
+
+
+import tempfile
+import os
+from truss.budget.sqlite_store import SqliteLedgerStore
+
+
+def test_sqlite_store_records_and_queries():
+    store = SqliteLedgerStore(":memory:")
+    store.record(make_entry("sess-a", 100, 0.10))
+    store.record(make_entry("sess-a", 200, 0.20))
+    report = store.usage("sess-a", BudgetWindow.PER_SESSION)
+    assert report.total_tokens == 300
+    assert abs(report.total_cost_usd - 0.30) < 0.001
+
+
+def test_sqlite_store_survives_reopen():
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        path = f.name
+    try:
+        store1 = SqliteLedgerStore(path)
+        store1.record(make_entry("persistent-sess", 500, 0.50))
+        store1.flush()
+        store1.close()
+
+        store2 = SqliteLedgerStore(path)
+        report = store2.usage("persistent-sess", BudgetWindow.PER_SESSION)
+        assert report.total_tokens == 500
+        store2.close()
+    finally:
+        os.unlink(path)
