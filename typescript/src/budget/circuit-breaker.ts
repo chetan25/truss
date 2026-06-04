@@ -39,7 +39,7 @@ export class CircuitBreaker {
   checkAndRecord(prompt: string, costUsd: number, nowMs: number): CircuitTrip | null {
     const hash = fnv1a(prompt);
     const cutoff = nowMs - 60_000;
-    this.window = this.window.filter(r => r.timestampMs >= cutoff);
+    this.window = this.window.filter(r => r.timestampMs > cutoff);
 
     if (this.window.length >= this.config.maxRequestsPerMinute) return CircuitTrip.RateLimit;
 
