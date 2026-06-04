@@ -1,2 +1,15 @@
-// Public API — populated in Task 11 after all modules exist.
-export {};
+export * from './errors.js';
+export * from './types.js';
+export { compress, SurgeonConfig, SurgeonResult, CompressionStrategy, scoreRelevance, detectContradiction } from './context/surgeon.js';
+export { pack, unpack, BudgetCarve } from './handoff/envelope.js';
+export { BudgetWindow, BudgetLimit, AlertConfig, BudgetConfig } from './budget/config.js';
+export { LedgerEntry, UsageReport, LedgerStore } from './budget/ledger.js';
+export { InMemoryStore } from './budget/memory-store.js';
+export { SqliteLedgerStore } from './budget/sqlite-store.js';
+export { CircuitBreaker, CircuitBreakerConfig, CircuitTrip } from './budget/circuit-breaker.js';
+export { Checkpoint, CheckpointMeta, CheckpointStore, InMemoryCheckpointStore } from './coord/checkpoint.js';
+export { SqliteCheckpointStore } from './coord/sqlite-checkpoint.js';
+export { FenceStore, InMemoryFence, LockHandle } from './fence/memory-fence.js';
+export { ModelSpec, RouterConfig, RouterRule, route } from './router/router.js';
+export { McpManifest, McpInterceptor, McpCall } from './mcp/interceptor.js';
+export { Session, SessionReport, SessionOptions } from './session.js';
