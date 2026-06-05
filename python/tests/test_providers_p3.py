@@ -234,3 +234,85 @@ async def test_anthropic_async_complete_records_to_session():
 
     await provider.async_complete([LLMMessage(role="user", content="hi")], model="claude-haiku-4-5")
     assert session.report().budget_used_usd > 0
+
+
+# ---------------------------------------------------------------------------
+# Task 5: GoogleProvider
+# ---------------------------------------------------------------------------
+
+def _make_google_mock(text="Gemini reply", input_tokens=20, output_tokens=10):
+    mock_response = MagicMock()
+    mock_response.text = text
+    mock_response.usage_metadata.prompt_token_count = input_tokens
+    mock_response.usage_metadata.candidates_token_count = output_tokens
+    mock_result = MagicMock()
+    mock_result.response = mock_response
+    mock_chat = MagicMock()
+    mock_chat.send_message.return_value = mock_result
+    mock_model = MagicMock()
+    mock_model.start_chat.return_value = mock_chat
+    mock_genai = MagicMock()
+    mock_genai.GenerativeModel.return_value = mock_model
+    return mock_genai
+
+
+def test_google_provider_complete_returns_response():
+    from truss.providers.google import GoogleProvider
+
+    provider = GoogleProvider(api_key="test-key")
+    provider._genai = _make_google_mock("Gemini reply", 20, 10)
+
+    result = provider.complete(
+        [LLMMessage(role="user", content="hello")],
+        model="gemini-1.5-flash",
+    )
+    assert result.text == "Gemini reply"
+    assert result.usage.input_tokens == 20
+    assert result.usage.output_tokens == 10
+    assert result.usage.cost_usd > 0
+
+
+def test_google_provider_system_message_prepended():
+    from truss.providers.google import GoogleProvider
+
+    provider = GoogleProvider(api_key="test-key")
+    mock_genai = _make_google_mock()
+    provider._genai = mock_genai
+
+    provider.complete(
+        [
+            LLMMessage(role="system", content="You are helpful."),
+            LLMMessage(role="user", content="Hi"),
+        ],
+        model="gemini-1.5-flash",
+    )
+
+    chat = mock_genai.GenerativeModel.return_value.start_chat.return_value
+    call_args = chat.send_message.call_args[0][0]
+    assert "You are helpful." in call_args
+    assert "Hi" in call_args
+
+
+def test_google_provider_records_usage_to_session():
+    from truss.providers.google import GoogleProvider
+    from truss.session import Session
+
+    session = Session()
+    provider = GoogleProvider(api_key="test-key", session=session)
+    provider._genai = _make_google_mock(input_tokens=100, output_tokens=50)
+
+    provider.complete([LLMMessage(role="user", content="hi")], model="gemini-1.5-flash")
+    assert session.report().budget_used_usd > 0
+
+
+def test_google_provider_missing_api_key_raises():
+    import os
+    from truss.providers.google import GoogleProvider
+
+    original = os.environ.pop("GOOGLE_API_KEY", None)
+    try:
+        with pytest.raises(ValueError, match="GOOGLE_API_KEY"):
+            GoogleProvider()
+    finally:
+        if original:
+            os.environ["GOOGLE_API_KEY"] = original
