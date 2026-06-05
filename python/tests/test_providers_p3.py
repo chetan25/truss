@@ -159,3 +159,78 @@ def test_openai_stream_final_chunk_has_usage():
     final = next(c for c in chunks if c.is_final)
     assert final.usage.input_tokens == 50
     assert final.usage.output_tokens == 25
+
+
+# ---------------------------------------------------------------------------
+# Task 4: async_complete()
+# ---------------------------------------------------------------------------
+from unittest.mock import AsyncMock
+
+
+def _make_anthropic_response_mock(text="Hello!", input_tokens=10, output_tokens=5):
+    mock_content = MagicMock()
+    mock_content.text = text
+    mock_response = MagicMock()
+    mock_response.content = [mock_content]
+    mock_response.usage.input_tokens = input_tokens
+    mock_response.usage.output_tokens = output_tokens
+    return mock_response
+
+
+def _make_openai_response_mock(text="Hi!", prompt_tokens=10, completion_tokens=5):
+    mock_choice = MagicMock()
+    mock_choice.message.content = text
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+    mock_response.usage.prompt_tokens = prompt_tokens
+    mock_response.usage.completion_tokens = completion_tokens
+    return mock_response
+
+
+async def test_anthropic_async_complete_returns_response():
+    from truss.providers.anthropic import AnthropicProvider
+
+    provider = AnthropicProvider(api_key="test-key")
+    provider._async_client = MagicMock()
+    provider._async_client.messages.create = AsyncMock(
+        return_value=_make_anthropic_response_mock("Async reply", 100, 50)
+    )
+
+    result = await provider.async_complete(
+        [LLMMessage(role="user", content="hello")],
+        model="claude-haiku-4-5",
+    )
+    assert result.text == "Async reply"
+    assert result.usage.input_tokens == 100
+
+
+async def test_openai_async_complete_returns_response():
+    from truss.providers.openai import OpenAIProvider
+
+    provider = OpenAIProvider(api_key="test-key")
+    provider._async_client = MagicMock()
+    provider._async_client.chat.completions.create = AsyncMock(
+        return_value=_make_openai_response_mock("Async OpenAI", 80, 40)
+    )
+
+    result = await provider.async_complete(
+        [LLMMessage(role="user", content="hello")],
+        model="gpt-4o-mini",
+    )
+    assert result.text == "Async OpenAI"
+    assert result.usage.input_tokens == 80
+
+
+async def test_anthropic_async_complete_records_to_session():
+    from truss.providers.anthropic import AnthropicProvider
+    from truss.session import Session
+
+    session = Session()
+    provider = AnthropicProvider(api_key="test-key", session=session)
+    provider._async_client = MagicMock()
+    provider._async_client.messages.create = AsyncMock(
+        return_value=_make_anthropic_response_mock(input_tokens=200, output_tokens=100)
+    )
+
+    await provider.async_complete([LLMMessage(role="user", content="hi")], model="claude-haiku-4-5")
+    assert session.report().budget_used_usd > 0
