@@ -65,6 +65,10 @@ class Session:
     def session_id(self) -> str:
         return str(self._envelope.id)
 
+    @property
+    def envelope(self) -> AgentEnvelope:
+        return self._envelope
+
     def compress(self, blocks: list[ContextBlock]) -> SurgeonResult:
         result = compress(blocks, self._surgeon_config)
         self._tokens_before += result.tokens_before

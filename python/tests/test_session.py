@@ -57,3 +57,14 @@ async def test_session_async_context_manager():
     async with Session(budget_usd=0.50) as s:
         result = s.compress(sample_blocks(5))
         assert result.tokens_after <= result.tokens_before
+
+
+def test_session_envelope_property_readable():
+    s = Session()
+    env = s.envelope
+    assert env is s._envelope
+
+
+def test_session_envelope_property_returns_agent_envelope():
+    s = Session()
+    assert isinstance(s.envelope, AgentEnvelope)
