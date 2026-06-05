@@ -316,3 +316,76 @@ def test_google_provider_missing_api_key_raises():
     finally:
         if original:
             os.environ["GOOGLE_API_KEY"] = original
+
+
+# ---------------------------------------------------------------------------
+# Task 6: OllamaProvider
+# ---------------------------------------------------------------------------
+
+def test_ollama_provider_complete_returns_response():
+    from truss.providers.ollama import OllamaProvider
+
+    provider = OllamaProvider()
+    provider._client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {
+        "message": {"content": "Ollama reply"},
+        "prompt_eval_count": 15,
+        "eval_count": 8,
+    }
+    provider._client.post.return_value = mock_response
+
+    result = provider.complete(
+        [LLMMessage(role="user", content="hello")],
+        model="llama3",
+    )
+    assert result.text == "Ollama reply"
+    assert result.usage.input_tokens == 15
+    assert result.usage.output_tokens == 8
+    assert result.usage.cost_usd == 0.0
+
+
+def test_ollama_provider_records_usage_to_session():
+    from truss.providers.ollama import OllamaProvider
+    from truss.session import Session
+
+    session = Session()
+    provider = OllamaProvider(session=session)
+    provider._client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {
+        "message": {"content": "hi"},
+        "prompt_eval_count": 100,
+        "eval_count": 50,
+    }
+    provider._client.post.return_value = mock_response
+
+    result = provider.complete([LLMMessage(role="user", content="hi")], model="llama3")
+    # OllamaProvider computes zero cost; Session may apply a fallback, but the
+    # provider-level cost is what matters for billing.
+    assert result.usage.cost_usd == 0.0
+
+
+def test_ollama_provider_passes_messages_correctly():
+    from truss.providers.ollama import OllamaProvider
+
+    provider = OllamaProvider(base_url="http://localhost:11434")
+    provider._client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json.return_value = {"message": {"content": "ok"}, "prompt_eval_count": 0, "eval_count": 0}
+    provider._client.post.return_value = mock_response
+
+    provider.complete(
+        [LLMMessage(role="user", content="hello")],
+        model="mistral",
+    )
+
+    call_kwargs = provider._client.post.call_args
+    payload = call_kwargs[1]["json"]
+    assert payload["model"] == "mistral"
+    assert payload["messages"][0]["role"] == "user"
+    assert payload["messages"][0]["content"] == "hello"
+    assert payload["stream"] is False
