@@ -34,3 +34,70 @@ def test_llm_stream_provider_protocol_satisfied():
         def stream(self, messages, model, **opts) -> Iterator[StreamChunk]: ...
 
     assert isinstance(FakeStreamProvider(), LLMStreamProvider)
+
+
+# ---------------------------------------------------------------------------
+# Task 2: AnthropicProvider.stream()
+# ---------------------------------------------------------------------------
+from unittest.mock import MagicMock
+
+
+def _make_anthropic_stream_mock(chunks=("Hello", " world"), input_tokens=10, output_tokens=5):
+    mock_cm = MagicMock()
+    mock_cm.__enter__ = MagicMock(return_value=mock_cm)
+    mock_cm.__exit__ = MagicMock(return_value=False)
+    mock_cm.text_stream = iter(chunks)
+    final_msg = MagicMock()
+    final_msg.usage.input_tokens = input_tokens
+    final_msg.usage.output_tokens = output_tokens
+    mock_cm.get_final_message.return_value = final_msg
+    return mock_cm
+
+
+def test_anthropic_stream_yields_text_chunks():
+    from truss.providers.anthropic import AnthropicProvider
+
+    provider = AnthropicProvider(api_key="test-key")
+    provider._client = MagicMock()
+    provider._client.messages.stream.return_value = _make_anthropic_stream_mock(("Hi", "!"))
+
+    chunks = list(provider.stream(
+        [LLMMessage(role="user", content="hello")],
+        model="claude-haiku-4-5",
+    ))
+    non_final = [c for c in chunks if not c.is_final]
+    assert [c.text for c in non_final] == ["Hi", "!"]
+
+
+def test_anthropic_stream_final_chunk_has_usage():
+    from truss.providers.anthropic import AnthropicProvider
+
+    provider = AnthropicProvider(api_key="test-key")
+    provider._client = MagicMock()
+    provider._client.messages.stream.return_value = _make_anthropic_stream_mock(
+        input_tokens=100, output_tokens=50
+    )
+
+    chunks = list(provider.stream(
+        [LLMMessage(role="user", content="hi")],
+        model="claude-haiku-4-5",
+    ))
+    final = next(c for c in chunks if c.is_final)
+    assert final.usage.input_tokens == 100
+    assert final.usage.output_tokens == 50
+    assert final.usage.cost_usd > 0
+
+
+def test_anthropic_stream_records_usage_to_session():
+    from truss.providers.anthropic import AnthropicProvider
+    from truss.session import Session
+
+    session = Session()
+    provider = AnthropicProvider(api_key="test-key", session=session)
+    provider._client = MagicMock()
+    provider._client.messages.stream.return_value = _make_anthropic_stream_mock(
+        input_tokens=200, output_tokens=100
+    )
+
+    list(provider.stream([LLMMessage(role="user", content="hi")], model="claude-haiku-4-5"))
+    assert session.report().budget_used_usd > 0
