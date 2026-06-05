@@ -121,3 +121,59 @@ def test_anthropic_provider_circuit_breaker_trips():
 
     with pytest.raises(BudgetExceeded):
         provider.complete([LLMMessage(role="user", content="hi")], model="claude-haiku-4-5")
+
+
+def _make_openai_response(text="Hi!", prompt_tokens=10, completion_tokens=5):
+    mock_choice = MagicMock()
+    mock_choice.message.content = text
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+    mock_response.usage.prompt_tokens = prompt_tokens
+    mock_response.usage.completion_tokens = completion_tokens
+    mock_response.model = "gpt-4o-mini"
+    return mock_response
+
+
+def test_openai_provider_complete_returns_response():
+    from truss.providers.openai import OpenAIProvider
+
+    provider = OpenAIProvider(api_key="test-key")
+    provider._client = MagicMock()
+    provider._client.chat.completions.create.return_value = _make_openai_response("OpenAI reply", 50, 20)
+
+    result = provider.complete(
+        [LLMMessage(role="user", content="hello")],
+        model="gpt-4o-mini",
+    )
+    assert result.text == "OpenAI reply"
+    assert result.usage.input_tokens == 50
+    assert result.usage.output_tokens == 20
+    assert result.usage.cost_usd > 0
+
+
+def test_openai_provider_records_usage_to_session():
+    from truss.providers.openai import OpenAIProvider
+    from truss.session import Session
+
+    session = Session()
+    provider = OpenAIProvider(api_key="test-key", session=session)
+    provider._client = MagicMock()
+    provider._client.chat.completions.create.return_value = _make_openai_response(prompt_tokens=100, completion_tokens=50)
+
+    provider.complete([LLMMessage(role="user", content="hi")], model="gpt-4o-mini")
+
+    report = session.report()
+    assert report.budget_used_usd > 0
+
+
+def test_openai_provider_missing_api_key_raises():
+    import os
+    from truss.providers.openai import OpenAIProvider
+
+    original = os.environ.pop("OPENAI_API_KEY", None)
+    try:
+        with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+            OpenAIProvider()
+    finally:
+        if original:
+            os.environ["OPENAI_API_KEY"] = original
