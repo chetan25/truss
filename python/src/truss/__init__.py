@@ -17,8 +17,12 @@ from truss.router.router import ModelSpec, RouterConfig, RouterRule, route
 from truss.mcp.interceptor import McpManifest, McpInterceptor, McpCall
 from truss.session import Session, SessionReport
 from truss.adapters.langchain import TrussMemory
-# Phase 2 providers
-from truss.providers.base import LLMMessage, LLMUsage, LLMResponse, LLMProvider, COST_TABLE, compute_cost
+# Phase 2+3 providers
+from truss.providers.base import (
+    LLMMessage, LLMUsage, LLMResponse, LLMProvider,
+    StreamChunk, LLMStreamProvider,
+    COST_TABLE, compute_cost,
+)
 from truss.providers.anthropic import AnthropicProvider
 from truss.providers.openai import OpenAIProvider
 from truss.providers.google import GoogleProvider
@@ -43,8 +47,10 @@ __all__ = [
     "McpManifest", "McpInterceptor", "McpCall",
     "Session", "SessionReport",
     "TrussMemory",
-    # Providers (Phase 2)
-    "LLMMessage", "LLMUsage", "LLMResponse", "LLMProvider", "COST_TABLE", "compute_cost",
+    # Providers (Phase 2+3)
+    "LLMMessage", "LLMUsage", "LLMResponse", "LLMProvider",
+    "StreamChunk", "LLMStreamProvider",
+    "COST_TABLE", "compute_cost",
     "AnthropicProvider", "OpenAIProvider", "GoogleProvider", "OllamaProvider",
     # Adapters (Phase 2)
     "TrussCallbackHandler", "TrussLLM",
