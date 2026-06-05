@@ -19,7 +19,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
+    "ai": "^6.0.197",
     "better-sqlite3": "^9.0.0",
+    "openai": "^6.42.0",
     "sql.js": "^1.14.1",
     "uuid": "^9.0.0"
   },

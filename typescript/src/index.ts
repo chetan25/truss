@@ -13,3 +13,11 @@ export { FenceStore, InMemoryFence, LockHandle } from './fence/memory-fence.js';
 export { ModelSpec, RouterConfig, RouterRule, route } from './router/router.js';
 export { McpManifest, McpInterceptor, McpCall } from './mcp/interceptor.js';
 export { Session, SessionReport, SessionOptions } from './session.js';
+// Phase 2 — Providers
+export { LLMMessage, LLMUsage, LLMResponse, LLMProvider, ProviderOptions, COST_TABLE, computeCost } from './providers/base.js';
+export { AnthropicProvider } from './providers/anthropic.js';
+export { OpenAIProvider } from './providers/openai.js';
+export { GoogleProvider } from './providers/google.js';
+export { OllamaProvider } from './providers/ollama.js';
+// Phase 2 — Adapters
+export { wrapModel, createTrussMiddleware, WrapModelOptions } from './adapters/vercel.js';
