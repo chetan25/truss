@@ -51,3 +51,77 @@ class TrussMemory:
 
     def clear(self) -> None:
         self.blocks = []
+
+
+try:
+    from langchain_core.callbacks.base import BaseCallbackHandler  # noqa: F401
+    from langchain_core.outputs import LLMResult  # noqa: F401
+    _LANGCHAIN_AVAILABLE = True
+except ImportError:
+    _LANGCHAIN_AVAILABLE = False
+
+
+def _require_langchain() -> None:
+    if not _LANGCHAIN_AVAILABLE:
+        raise ImportError("langchain-core required: pip install truss-ai[langchain]")
+
+
+class TrussCallbackHandler:
+    """LangChain callback that auto-records token usage into a Truss Session."""
+
+    def __init__(self, session: Any) -> None:
+        _require_langchain()
+        self._session = session
+
+    def on_llm_end(self, response: Any, **kwargs: Any) -> None:
+        llm_output = (response.llm_output or {}) if hasattr(response, "llm_output") else {}
+
+        usage = llm_output.get("usage") or {}
+        input_tokens = usage.get("input_tokens", 0)
+        output_tokens = usage.get("output_tokens", 0)
+
+        if not input_tokens and not output_tokens:
+            token_usage = llm_output.get("token_usage") or {}
+            input_tokens = token_usage.get("prompt_tokens", 0)
+            output_tokens = token_usage.get("completion_tokens", 0)
+
+        model = (
+            llm_output.get("model")
+            or llm_output.get("model_name")
+            or "unknown"
+        )
+
+        if input_tokens or output_tokens:
+            self._session.record_usage(
+                input_tokens=int(input_tokens),
+                output_tokens=int(output_tokens),
+                model=model,
+            )
+
+    def on_llm_error(self, error: Any, **kwargs: Any) -> None:
+        pass
+
+
+class TrussLLM:
+    """LangChain-compatible LLM that routes calls through a Truss LLMProvider."""
+
+    def __init__(self, provider: Any, default_model: str = "claude-haiku-4-5") -> None:
+        _require_langchain()
+        self._provider = provider
+        self.default_model = default_model
+
+    @property
+    def _llm_type(self) -> str:
+        return "truss"
+
+    def _call(self, prompt: str, stop: Any = None, run_manager: Any = None, **kwargs: Any) -> str:
+        from truss.providers.base import LLMMessage
+        messages = [LLMMessage(role="user", content=prompt)]
+        response = self._provider.complete(messages=messages, model=self.default_model)
+        return response.text
+
+    def invoke(self, prompt: str, **kwargs: Any) -> str:
+        return self._call(prompt, **kwargs)
+
+    def __call__(self, prompt: str, **kwargs: Any) -> str:
+        return self._call(prompt, **kwargs)
