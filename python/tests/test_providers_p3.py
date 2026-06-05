@@ -101,3 +101,61 @@ def test_anthropic_stream_records_usage_to_session():
 
     list(provider.stream([LLMMessage(role="user", content="hi")], model="claude-haiku-4-5"))
     assert session.report().budget_used_usd > 0
+
+
+# ---------------------------------------------------------------------------
+# Task 3: OpenAIProvider.stream()
+# ---------------------------------------------------------------------------
+
+def _make_openai_chunk(content=None, prompt_tokens=None, completion_tokens=None):
+    chunk = MagicMock()
+    if content is not None:
+        chunk.choices = [MagicMock()]
+        chunk.choices[0].delta.content = content
+    else:
+        chunk.choices = []
+    if prompt_tokens is not None:
+        chunk.usage = MagicMock()
+        chunk.usage.prompt_tokens = prompt_tokens
+        chunk.usage.completion_tokens = completion_tokens
+    else:
+        chunk.usage = None
+    return chunk
+
+
+def test_openai_stream_yields_text_chunks():
+    from truss.providers.openai import OpenAIProvider
+
+    provider = OpenAIProvider(api_key="test-key")
+    provider._client = MagicMock()
+    provider._client.chat.completions.create.return_value = iter([
+        _make_openai_chunk(content="Hello"),
+        _make_openai_chunk(content=" world"),
+        _make_openai_chunk(prompt_tokens=10, completion_tokens=5),
+    ])
+
+    chunks = list(provider.stream(
+        [LLMMessage(role="user", content="hello")],
+        model="gpt-4o-mini",
+    ))
+    non_final = [c for c in chunks if not c.is_final]
+    assert [c.text for c in non_final] == ["Hello", " world"]
+
+
+def test_openai_stream_final_chunk_has_usage():
+    from truss.providers.openai import OpenAIProvider
+
+    provider = OpenAIProvider(api_key="test-key")
+    provider._client = MagicMock()
+    provider._client.chat.completions.create.return_value = iter([
+        _make_openai_chunk(content="hi"),
+        _make_openai_chunk(prompt_tokens=50, completion_tokens=25),
+    ])
+
+    chunks = list(provider.stream(
+        [LLMMessage(role="user", content="hi")],
+        model="gpt-4o-mini",
+    ))
+    final = next(c for c in chunks if c.is_final)
+    assert final.usage.input_tokens == 50
+    assert final.usage.output_tokens == 25
