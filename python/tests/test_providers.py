@@ -177,3 +177,19 @@ def test_openai_provider_missing_api_key_raises():
     finally:
         if original:
             os.environ["OPENAI_API_KEY"] = original
+
+
+def test_google_provider_raises_not_implemented():
+    from truss.providers.google import GoogleProvider
+
+    with pytest.raises(NotImplementedError, match="not yet implemented"):
+        provider = GoogleProvider()
+        provider.complete([LLMMessage(role="user", content="hi")], model="gemini-pro")
+
+
+def test_ollama_provider_raises_not_implemented():
+    from truss.providers.ollama import OllamaProvider
+
+    with pytest.raises(NotImplementedError, match="not yet implemented"):
+        provider = OllamaProvider()
+        provider.complete([LLMMessage(role="user", content="hi")], model="llama3")
