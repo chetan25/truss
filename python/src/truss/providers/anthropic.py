@@ -43,7 +43,8 @@ class AnthropicProvider:
         model_id = model or self._default_model
 
         if self._circuit_breaker:
-            trip = self._circuit_breaker.check_and_record("", 0.0, int(time.time() * 1000))
+            prompt = messages[0].content if messages else ""
+            trip = self._circuit_breaker.check_and_record(prompt, 0.0, int(time.time() * 1000))
             if trip is not None:
                 raise BudgetExceeded(f"Circuit breaker tripped: {trip.value}")
 
