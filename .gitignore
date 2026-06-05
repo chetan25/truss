@@ -13,6 +13,9 @@ dist/
 *.tsbuildinfo
 .turbo/
 
+# Build output
+target/
+
 # Editors
 .vscode/
 .idea/
