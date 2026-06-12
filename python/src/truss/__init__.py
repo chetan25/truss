@@ -30,6 +30,7 @@ from truss.providers.ollama import OllamaProvider
 # Phase 2 adapters
 from truss.adapters.langchain import TrussCallbackHandler, TrussLLM
 from truss.adapters.crewai import PackHandoffTool, UnpackHandoffTool, TrussCrewCallback
+from truss.adapters.langgraph import TrussNode
 
 __all__ = [
     "TrussError", "BudgetExceeded", "ToolOutOfScope", "CheckpointNotFound", "FenceLockConflict",
@@ -55,4 +56,5 @@ __all__ = [
     # Adapters (Phase 2)
     "TrussCallbackHandler", "TrussLLM",
     "PackHandoffTool", "UnpackHandoffTool", "TrussCrewCallback",
+    "TrussNode",
 ]
