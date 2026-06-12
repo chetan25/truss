@@ -2,7 +2,7 @@
 
 > The structural layer for agentic AI workflows.
 
-LLM-agnostic · MCP-native · Rust core · Python + TypeScript surfaces
+LLM-agnostic · MCP-native · Python + TypeScript
 
 ---
 
@@ -25,15 +25,12 @@ Truss solves all six with one install.
 
 ## Architecture
 
-Performance-critical logic (context compression, token counting, envelope packing, MCP interception, ledger accounting) runs as a Rust crate. Python and TypeScript are thin bindings via PyO3 and napi-rs — the same pattern used by uv, Ruff, and Pydantic v2.
+Truss is structured as a Python core with a TypeScript surface. All logic (context compression, token counting, envelope packing, MCP interception, ledger accounting) lives in the Python package, with a TypeScript SDK wrapping the same primitives.
 
 ```
 truss/
-├── crates/
-│   ├── truss-core/     # Pure Rust — all performance-critical logic
-│   ├── truss-py/       # PyO3 bindings → pip install truss-ai
-│   └── truss-node/     # napi-rs bindings → npm install truss-ai (Phase 2)
-├── python/truss/       # Python session layer + framework adapters
+├── python/truss/       # Python core — all logic + framework adapters
+├── typescript/         # TypeScript SDK → npm install truss-ai (Phase 2)
 └── examples/           # Reference implementations
 ```
 
@@ -42,7 +39,7 @@ truss/
 ## Modules
 
 ### Module 1 — Context Surgeon
-Compresses agent context before each LLM call using weighted pruning and sliding window strategies. Runs 7–10× faster than Python equivalents. No GIL, true parallelism.
+Compresses agent context before each LLM call using weighted pruning and sliding window strategies.
 
 Strategies: `SlidingWindow`, `WeightedPrune`, `Hybrid` (Phase 1) · `SemanticDedup`, `Summarise` (Phase 2)
 
@@ -118,14 +115,13 @@ async with Session(budget_usd=1.00) as s:
 |---|---|---|
 | PyPI | `truss-ai` | `import truss` |
 | npm | `truss-ai` | `import { Session } from 'truss-ai'` |
-| crates.io | `truss-core` | `use truss_core::Session;` |
 
 ---
 
 ## Build Phases
 
-- **Phase 1** (Weeks 1–8): Rust core + Python surface. All 7 modules, PyO3 bindings, LangChain adapter, `pip install truss-ai`.
-- **Phase 2** (Weeks 9–16): Multi-LLM router, MCP interceptor, TypeScript/napi-rs surface, `npm install truss-ai`, additional framework adapters.
+- **Phase 1** (Weeks 1–8): Python core. All 7 modules, LangChain adapter, `pip install truss-ai`.
+- **Phase 2** (Weeks 9–16): Multi-LLM router, MCP interceptor, TypeScript surface, `npm install truss-ai`, additional framework adapters.
 - **Phase 3** (Weeks 17–24): Claude Code MCP server, trust registry, embedding classifier, docs site, `0.1.0` public release.
 
 ---
@@ -134,12 +130,9 @@ async with Session(budget_usd=1.00) as s:
 
 | Layer | Technology |
 |---|---|
-| Core engine | Rust 2021 edition |
-| Async runtime | Tokio |
-| Python bindings | PyO3 + Maturin |
-| TypeScript bindings | napi-rs (Phase 2) |
+| Core engine | Python 3.11+ |
+| Async runtime | asyncio |
+| TypeScript SDK | Node.js (Phase 2) |
 | Token counting | `chars / 4` provider-agnostic estimate |
-| Serialisation | serde + serde_json |
 | Storage | SQLite (bundled); Redis optional (Phase 2) |
-| Error handling | thiserror |
 | CI targets | x86_64/aarch64 Linux, macOS, Windows |
