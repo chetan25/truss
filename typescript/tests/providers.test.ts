@@ -161,18 +161,20 @@ describe('OpenAIProvider', () => {
 import { GoogleProvider } from '../src/providers/google.js';
 import { OllamaProvider } from '../src/providers/ollama.js';
 
-describe('GoogleProvider stub', () => {
-  it('throws not yet implemented', async () => {
-    const p = new GoogleProvider();
-    await expect(p.complete([{ role: 'user', content: 'hi' }], 'gemini-pro'))
-      .rejects.toThrow('not yet implemented');
+describe('GoogleProvider', () => {
+  it('throws if API key missing', () => {
+    const orig = process.env.GOOGLE_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    try {
+      expect(() => new GoogleProvider({})).toThrow('GOOGLE_API_KEY');
+    } finally {
+      if (orig) process.env.GOOGLE_API_KEY = orig;
+    }
   });
 });
 
-describe('OllamaProvider stub', () => {
-  it('throws not yet implemented', async () => {
-    const p = new OllamaProvider();
-    await expect(p.complete([{ role: 'user', content: 'hi' }], 'llama3'))
-      .rejects.toThrow('not yet implemented');
+describe('OllamaProvider', () => {
+  it('requires no API key', () => {
+    expect(() => new OllamaProvider()).not.toThrow();
   });
 });

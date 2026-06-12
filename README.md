@@ -52,7 +52,7 @@ Per-session, per-user, per-agent, and global budget enforcement with configurabl
 Storage: in-memory (`InMemoryStore`) or file-backed (`SqliteLedgerStore`). Redis support in Phase 2.
 
 ### Module 4 — Multi-LLM Router *(Phase 2)*
-Routes tasks to the right model tier (cheap/standard/premium/auto) based on complexity, token budget, latency requirements, or keyword rules. Provider adapters: Anthropic, OpenAI, Google, Ollama.
+Routes tasks to the right model tier (cheap/standard/premium/auto) based on complexity, token budget, latency requirements, or keyword rules. Provider adapters: OpenAI, Google, Ollama, and more.
 
 ### Module 5 — MCP Interceptor *(Phase 2)*
 Intercepts MCP tool calls against a JSON scope manifest before they execute. Enforces path allow/deny lists, per-tool config, and trust levels. Every call is audit-logged.
@@ -104,7 +104,7 @@ async with Session(budget_usd=1.00) as s:
 | Pydantic AI | Python | `TrussRunHooks` | 2 |
 | Vercel AI SDK | TypeScript | `trussMiddleware()` | 2 |
 | Mastra | TypeScript | `TrussStep` | 2 |
-| Claude Code | TypeScript | MCP server | 3 |
+| MCP Server | TypeScript | MCP server | 3 |
 | Raw API | Both | `Session` | 1 |
 
 ---
@@ -122,7 +122,7 @@ async with Session(budget_usd=1.00) as s:
 
 - **Phase 1** (Weeks 1–8): Python core. All 7 modules, LangChain adapter, `pip install truss-ai`.
 - **Phase 2** (Weeks 9–16): Multi-LLM router, MCP interceptor, TypeScript surface, `npm install truss-ai`, additional framework adapters.
-- **Phase 3** (Weeks 17–24): Claude Code MCP server, trust registry, embedding classifier, docs site, `0.1.0` public release.
+- **Phase 3** (Weeks 17–24): MCP server, trust registry, embedding classifier, docs site, `0.1.0` public release.
 
 ---
 

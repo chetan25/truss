@@ -1,10 +1,10 @@
 import { createRequire } from 'node:module';
 import { BudgetExceeded } from '../errors.js';
-import { LLMMessage, LLMProvider, LLMResponse, ProviderOptions, computeCost } from './base.js';
+import { LLMMessage, LLMProvider, LLMResponse, LLMStreamProvider, ProviderOptions, StreamChunk, computeCost } from './base.js';
 
 const _req = createRequire(import.meta.url);
 
-export class OpenAIProvider implements LLMProvider {
+export class OpenAIProvider implements LLMStreamProvider {
   _client: any;
   private session?: any;
   private circuitBreaker?: any;
@@ -57,5 +57,48 @@ export class OpenAIProvider implements LLMProvider {
 
     const text: string = response.choices?.[0]?.message?.content ?? '';
     return { text, model: modelId, usage: { inputTokens, outputTokens, costUsd }, raw: response };
+  }
+
+  async *stream(
+    messages: LLMMessage[],
+    model?: string,
+    opts: Record<string, unknown> = {},
+  ): AsyncGenerator<StreamChunk> {
+    const modelId = model ?? this.defaultModel;
+
+    if (this.circuitBreaker) {
+      const trip = this.circuitBreaker.checkAndRecord('', 0, Date.now());
+      if (trip !== null) throw new BudgetExceeded(`Circuit breaker tripped: ${trip}`);
+    }
+
+    const streamIter = await this._client.chat.completions.create({
+      model: modelId,
+      max_tokens: (opts['maxTokens'] as number) ?? 1024,
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    for await (const chunk of streamIter) {
+      const content: string | null | undefined = chunk.choices?.[0]?.delta?.content;
+      if (content) {
+        yield { text: content, isFinal: false };
+      }
+      if (chunk.usage) {
+        inputTokens = chunk.usage.prompt_tokens ?? 0;
+        outputTokens = chunk.usage.completion_tokens ?? 0;
+      }
+    }
+
+    const costUsd = computeCost(modelId, inputTokens, outputTokens);
+
+    if (this.session && (inputTokens || outputTokens)) {
+      this.session.recordUsage(inputTokens, outputTokens, costUsd, modelId);
+    }
+
+    yield { text: '', isFinal: true, usage: { inputTokens, outputTokens, costUsd } };
   }
 }

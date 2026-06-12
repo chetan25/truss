@@ -14,7 +14,8 @@ export { ModelSpec, RouterConfig, RouterRule, route } from './router/router.js';
 export { McpManifest, McpInterceptor, McpCall } from './mcp/interceptor.js';
 export { Session, SessionReport, SessionOptions } from './session.js';
 // Phase 2 — Providers
-export { LLMMessage, LLMUsage, LLMResponse, LLMProvider, ProviderOptions, COST_TABLE, computeCost } from './providers/base.js';
+export type { LLMMessage, LLMUsage, LLMResponse, StreamChunk, LLMProvider, LLMStreamProvider, ProviderOptions } from './providers/base.js';
+export { COST_TABLE, computeCost } from './providers/base.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 export { OpenAIProvider } from './providers/openai.js';
 export { GoogleProvider } from './providers/google.js';

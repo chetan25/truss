@@ -27,6 +27,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@google/generative-ai": "^0.14.0",
     "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^20.0.0",
     "@types/sql.js": "^1.4.11",
@@ -34,5 +35,15 @@
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": ">=0.20",
+    "openai": ">=4",
+    "@google/generative-ai": ">=0.14"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": { "optional": true },
+    "openai": { "optional": true },
+    "@google/generative-ai": { "optional": true }
   }
 }
